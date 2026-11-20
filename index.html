@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TuProfe20 Lab - Fuerza Eléctrica</title>
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+    <!-- KaTeX -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800;900&display=swap');
+
+        body { margin: 0; padding: 0; overflow: hidden; width: 100vw; height: 100dvh; user-select: none; }
+        .font-fun { font-family: 'Nunito', sans-serif; }
+
+        @keyframes floatUp {
+            0% { transform: translateY(105vh) rotate(0deg); }
+            100% { transform: translateY(-105vh) rotate(360deg); }
+        }
+        @keyframes slideInRight {
+            0% { opacity: 0; transform: translateX(14px); }
+            100% { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes confettiExplosion {
+            0% { transform: translate(0, 0) scale(1) rotate(0deg); opacity: 1; }
+            80% { opacity: 1; }
+            100% { transform: translate(var(--tx), var(--ty)) scale(0) rotate(var(--rot)); opacity: 0; }
+        }
+        @keyframes jellyPop {
+            0% { transform: scale3d(.88, .88, .88); opacity: 0; }
+            50% { transform: scale3d(1.04, 1.04, 1.04); opacity: 1; }
+            100% { transform: scale3d(1, 1, 1); opacity: 1; }
+        }
+        @keyframes robotFloat { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-6px); } }
+        @keyframes robotThinkTilt { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(6deg) translateY(-3px); } }
+        @keyframes robotJump { 0%, 100% { transform: translateY(0); } 30% { transform: translateY(-14px); } }
+        @keyframes robotTalkArmL { 0%, 100% { transform: rotate(45deg); } 50% { transform: rotate(95deg); } }
+        @keyframes robotTalkArmR { 0%, 100% { transform: rotate(-45deg); } 50% { transform: rotate(-95deg); } }
+        @keyframes dashFlow { to { stroke-dashoffset: -24; } }
+        @keyframes pulseAura { 0%, 100% { opacity: 0.35; transform: scale(1); } 50% { opacity: 0.7; transform: scale(1.08); } }
+
+        .scrollbar-hide::-webkit-scrollbar { display: none; }
+        .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .animate-floatUp { animation: floatUp linear infinite; }
+        .animate-slideInRight { animation: slideInRight 0.3s ease-out forwards; }
+        .animate-confettiExplosion { animation: confettiExplosion 1.8s cubic-bezier(0.25, 1, 0.5, 1) forwards; }
+        .animate-jellyPop { animation: jellyPop 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        .animate-robotFloat { animation: robotFloat 3s ease-in-out infinite; }
+        .animate-robotThinkTilt { animation: robotThinkTilt 2s ease-in-out infinite; }
+        .animate-robotJump { animation: robotJump 1s cubic-bezier(0.28, 0.84, 0.42, 1) infinite; }
+        .animate-robotTalkArmL { animation: robotTalkArmL 0.6s ease-in-out infinite; }
+        .animate-robotTalkArmR { animation: robotTalkArmR 0.6s ease-in-out infinite 0.1s; }
+        .animate-dashFlow { animation: dashFlow 1s linear infinite; }
+        .animate-pulseAura { animation: pulseAura 2.2s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+
+        .katex { font-weight: 900 !important; }
+        .katex-display { margin: 0 !important; padding: 0 !important; }
+        .math-card .katex { font-size: clamp(0.85rem, 1.5vw, 1.15rem) !important; color: #1e293b !important; }
+        .math-enunciado .katex { font-size: clamp(0.95rem, 1.6vw, 1.35rem) !important; color: #fde047 !important; }
+        .math-current .katex { font-size: clamp(1.05rem, 2.2vw, 1.95rem) !important; color: #0f172a !important; }
+        .math-history .katex { font-size: clamp(0.9rem, 1.7vw, 1.45rem) !important; color: #475569 !important; }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef, memo } = React;
+
+        const Icon = ({ paths, className = "", size = 24, fill = "none", strokeWidth = "2.5" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill={fill} stroke="currentColor" strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{__html: paths}} />
+        );
+
+        const VolumeX = (p) => <Icon {...p} paths='<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/>' />;
+        const Volume2 = (p) => <Icon {...p} paths='<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/>' />;
+        const Rocket = (p) => <Icon {...p} paths='<path d="M4.5 16.5c-1.5 1.26-2 5-2 5s3.74-.5 5-2c.71-.84.7-2.13-.09-2.91a2.18 2.18 0 0 0-2.91-.09z"/><path d="m12 15-3-3a22 22 0 0 1 2-3.95A12.88 12.88 0 0 1 22 2c0 2.72-.78 7.5-6 11a22.35 22.35 0 0 1-4 2z"/><path d="M9 12H4s.55-3.03 2-4c1.62-1.08 5 0 5 0"/><path d="M12 15v5s3.03-.55 4-2c1.08-1.62 0-5 0-5"/>' />;
+        const Home = (p) => <Icon {...p} paths='<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>' />;
+        const ChevronLeft = (p) => <Icon {...p} paths='<polyline points="15 18 9 12 15 6"/>' />;
+        const ChevronRight = (p) => <Icon {...p} paths='<polyline points="9 18 15 12 9 6"/>' />;
+
+        const AudioController = {
+            ctx: null, muted: false,
+            init() {
+                if (this.ctx) return;
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) this.ctx = new AudioContext();
+            },
+            play(type) {
+                if (this.muted || !this.ctx) return;
+                if (this.ctx.state === 'suspended') this.ctx.resume();
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.connect(gain); gain.connect(this.ctx.destination);
+                const now = this.ctx.currentTime;
+
+                if (type === 'pop') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(520, now); osc.frequency.exponentialRampToValueAtTime(840, now + 0.09);
+                    gain.gain.setValueAtTime(0.2, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.09);
+                    osc.start(now); osc.stop(now + 0.09);
+                } else if (type === 'pop-reverse') {
+                    osc.type = 'triangle'; osc.frequency.setValueAtTime(620, now); osc.frequency.exponentialRampToValueAtTime(280, now + 0.11);
+                    gain.gain.setValueAtTime(0.18, now); gain.gain.exponentialRampToValueAtTime(0.01, now + 0.11);
+                    osc.start(now); osc.stop(now + 0.11);
+                } else if (type === 'success') {
+                    osc.disconnect();
+                    [523.25, 659.25, 783.99, 1046.5].forEach((freq, i) => {
+                        const o = this.ctx.createOscillator(); const g = this.ctx.createGain();
+                        o.type = 'triangle'; o.frequency.value = freq;
+                        o.connect(g); g.connect(this.ctx.destination);
+                        const t = now + i * 0.07;
+                        g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(0.18, t + 0.04); g.gain.linearRampToValueAtTime(0, t + 0.34);
+                        o.start(t); o.stop(t + 0.34);
+                    });
+                } else if (type === 'swoosh') {
+                    osc.type = 'sine'; osc.frequency.setValueAtTime(280, now); osc.frequency.exponentialRampToValueAtTime(80, now + 0.16);
+                    gain.gain.setValueAtTime(0.18, now); gain.gain.linearRampToValueAtTime(0.01, now + 0.16);
+                    osc.start(now); osc.stop(now + 0.16);
+                }
+            },
+            toggleMute() { this.muted = !this.muted; return this.muted; }
+        };
+
+        const MathDisplay = memo(({ latex, className = "", inline = false }) => {
+            const containerRef = useRef(null);
+            useEffect(() => {
+                if (containerRef.current && window.katex) {
+                    try {
+                        window.katex.render(latex, containerRef.current, { displayMode: !inline, throwOnError: false });
+                    } catch (e) { containerRef.current.innerText = latex; }
+                }
+            }, [latex, inline]);
+            return inline
+                ? <span ref={containerRef} className={`inline-block align-middle ${className}`} />
+                : <div className={`relative w-full flex justify-center ${className}`}><div ref={containerRef} className="w-full text-center overflow-x-auto scrollbar-hide" /></div>;
+        });
+
+        // ============================================================
+        // MOTOR VISUAL INMERSIVO Y REACTIVO A LAS ECUACIONES
+        // ============================================================
+        const SchemaRenderer = ({ config, step, isFinal }) => {
+            if (!config) return null;
+
+            return (
+                <svg viewBox="0 0 360 240" className="w-full h-full drop-shadow-2xl font-fun">
+                    <defs>
+                        {/* Cuadrícula de laboratorio */}
+                        <pattern id="labGrid" width="20" height="20" patternUnits="userSpaceOnUse">
+                            <path d="M 20 0 L 0 0 0 20" fill="none" stroke="rgba(56, 189, 248, 0.12)" strokeWidth="1"/>
+                        </pattern>
+                        {/* Gradientes de cargas */}
+                        <radialGradient id="gradPos" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#fca5a5" />
+                            <stop offset="50%" stopColor="#ef4444" />
+                            <stop offset="100%" stopColor="#991b1b" />
+                        </radialGradient>
+                        <radialGradient id="gradNeg" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#93c5fd" />
+                            <stop offset="50%" stopColor="#3b82f6" />
+                            <stop offset="100%" stopColor="#1e3a8a" />
+                        </radialGradient>
+                        <radialGradient id="gradNeu" cx="35%" cy="35%" r="65%">
+                            <stop offset="0%" stopColor="#94a3b8" />
+                            <stop offset="60%" stopColor="#475569" />
+                            <stop offset="100%" stopColor="#1e293b" />
+                        </radialGradient>
+                        <filter id="neonGlow" x="-30%" y="-30%" width="160%" height="160%">
+                            <feGaussianBlur stdDeviation="3.5" result="blur"/>
+                            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+                        </filter>
+                        <marker id="arr-g" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#10b981"/></marker>
+                        <marker id="arr-r" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#f43f5e"/></marker>
+                        <marker id="arr-y" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#facc15"/></marker>
+                        <marker id="arr-c" viewBox="0 0 10 10" refX="7" refY="5" markerWidth="6" markerHeight="6" orient="auto"><path d="M 0 1 L 10 5 L 0 9 z" fill="#38bdf8"/></marker>
+                    </defs>
+
+                    {/* Fondo del laboratorio */}
+                    <rect width="360" height="240" rx="16" fill="#0b1120" />
+                    <rect width="360" height="240" rx="16" fill="url(#labGrid)" />
+
+                    {/* 1. LEY DE COULOMB */}
+                    {config.type === 'coulomb' && (() => {
+                        const isPos1 = config.q1.includes('+');
+                        const isPos2 = config.q2.includes('+');
+                        const repel = config.repel !== undefined ? config.repel : (isPos1 === isPos2);
+                        return (
+                            <g>
+                                {/* Líneas de campo eléctrico animadas */}
+                                {!repel ? (
+                                    <g stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.5" fill="none" strokeDasharray="6 6" className="animate-dashFlow">
+                                        <path d="M 105 95 Q 180 45 255 95" />
+                                        <path d="M 105 115 Q 180 165 255 115" />
+                                    </g>
+                                ) : (
+                                    <g stroke="rgba(250, 204, 21, 0.3)" strokeWidth="1.5" fill="none" strokeDasharray="6 6" className="animate-dashFlow">
+                                        <path d="M 110 92 Q 165 50 168 25" />
+                                        <path d="M 250 92 Q 195 50 192 25" />
+                                        <path d="M 110 118 Q 165 160 168 185" />
+                                        <path d="M 250 118 Q 195 160 192 185" />
+                                    </g>
+                                )}
+
+                                {/* Cota de distancia */}
+                                <g>
+                                    <line x1="90" y1="168" x2="270" y2="168" stroke="#64748b" strokeWidth="2" strokeDasharray="4 4" />
+                                    <line x1="90" y1="160" x2="90" y2="176" stroke="#94a3b8" strokeWidth="2" />
+                                    <line x1="270" y1="160" x2="270" y2="176" stroke="#94a3b8" strokeWidth="2" />
+                                    <rect x="142" y="156" width="76" height="24" rx="8" fill="#1e293b" stroke="#38bdf8" strokeWidth="1.5" />
+                                    <text x="180" y="173" textAnchor="middle" fill="#38bdf8" fontSize="13" fontWeight="900">
+                                        {config.d || 'd = ?'}
+                                    </text>
+                                </g>
+
+                                {/* Halos pulsantes */}
+                                <circle cx="90" cy="105" r="34" fill={isPos1 ? 'rgba(239,68,68,0.22)' : 'rgba(59,130,246,0.22)'} className="animate-pulseAura" />
+                                <circle cx="270" cy="105" r="34" fill={isPos2 ? 'rgba(239,68,68,0.22)' : 'rgba(59,130,246,0.22)'} className="animate-pulseAura" />
+
+                                {/* Carga 1 */}
+                                <circle cx="90" cy="105" r="24" fill={isPos1 ? 'url(#gradPos)' : 'url(#gradNeg)'} stroke="#fff" strokeWidth="2.5" />
+                                <text x="90" y="112" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="900">{config.q1}</text>
+                                {config.l1 && <text x="90" y="62" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="800">{config.l1}</text>}
+
+                                {/* Carga 2 */}
+                                <circle cx="270" cy="105" r="24" fill={isPos2 ? 'url(#gradPos)' : 'url(#gradNeg)'} stroke="#fff" strokeWidth="2.5" />
+                                <text x="270" y="112" textAnchor="middle" fill="#fff" fontSize="20" fontWeight="900">{config.q2}</text>
+                                {config.l2 && <text x="270" y="62" textAnchor="middle" fill="#e2e8f0" fontSize="12" fontWeight="800">{config.l2}</text>}
+
+                                {/* Vectores de Fuerza */}
+                                {config.f && (
+                                    <g filter="url(#neonGlow)">
+                                        {repel ? (
+                                            <>
+                                                <line x1="60" y1="105" x2="18" y2="105" stroke="#10b981" strokeWidth="4.5" markerEnd="url(#arr-g)"/>
+                                                <line x1="300" y1="105" x2="342" y2="105" stroke="#10b981" strokeWidth="4.5" markerEnd="url(#arr-g)"/>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <line x1="120" y1="105" x2="162" y2="105" stroke="#10b981" strokeWidth="4.5" markerEnd="url(#arr-g)"/>
+                                                <line x1="240" y1="105" x2="198" y2="105" stroke="#10b981" strokeWidth="4.5" markerEnd="url(#arr-g)"/>
+                                            </>
+                                        )}
+                                        <rect x="115" y="196" width="130" height="28" rx="14" fill={isFinal ? '#059669' : '#1e293b'} stroke="#34d399" strokeWidth="2" />
+                                        <text x="180" y="215" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">
+                                            {repel ? 'Repulsión: ' : 'Atracción: '}{config.f}
+                                        </text>
+                                    </g>
+                                )}
+                            </g>
+                        );
+                    })()}
+
+                    {/* 2. TRANSFERENCIA DE ELECTRONES (CUANTIZACIÓN) */}
+                    {config.type === 'transfer' && (() => {
+                        const isNeg = config.val && config.val.includes('-');
+                        const isPos = config.val && config.val.includes('+');
+                        const fillUrl = isNeg ? 'url(#gradNeg)' : isPos ? 'url(#gradPos)' : 'url(#gradNeu)';
+                        const auraCol = isNeg ? 'rgba(59,130,246,0.3)' : isPos ? 'rgba(239,68,68,0.3)' : 'rgba(148,163,184,0.2)';
+                        return (
+                            <g>
+                                {/* Halo del cuerpo */}
+                                <circle cx="180" cy="118" r="64" fill={auraCol} className="animate-pulseAura" />
+                                <circle cx="180" cy="118" r="48" fill={fillUrl} stroke="#fff" strokeWidth="3" />
+                                <text x="180" y="114" textAnchor="middle" fill="#cbd5e1" fontSize="12" fontWeight="800">{config.obj}</text>
+                                <text x="180" y="135" textAnchor="middle" fill="#fff" fontSize={config.val ? "19" : "15"} fontWeight="900">
+                                    {config.val || 'Q = 0'}
+                                </text>
+
+                                {/* Flujo de electrones GANADOS */}
+                                {config.action === 'gana' && (
+                                    <g>
+                                        <path d="M 28 62 Q 90 36 135 84" fill="none" stroke="#facc15" strokeWidth="3.5" strokeDasharray="6 5" className="animate-dashFlow" markerEnd="url(#arr-y)"/>
+                                        <path d="M 28 168 Q 90 190 135 150" fill="none" stroke="#facc15" strokeWidth="3.5" strokeDasharray="6 5" className="animate-dashFlow" markerEnd="url(#arr-y)"/>
+                                        <circle cx="52" cy="54" r="10" fill="#eab308" stroke="#fff" strokeWidth="1.5" />
+                                        <text x="52" y="58" textAnchor="middle" fill="#0f172a" fontSize="11" fontWeight="900">e⁻</text>
+                                        <circle cx="52" cy="176" r="10" fill="#eab308" stroke="#fff" strokeWidth="1.5" />
+                                        <text x="52" y="180" textAnchor="middle" fill="#0f172a" fontSize="11" fontWeight="900">e⁻</text>
+                                        <rect x="18" y="18" width="142" height="24" rx="10" fill="rgba(250,204,21,0.16)" stroke="#facc15" strokeWidth="1.5" />
+                                        <text x="89" y="34" textAnchor="middle" fill="#fde047" fontSize="12" fontWeight="900">Gana {config.n} e⁻</text>
+                                    </g>
+                                )}
+
+                                {/* Flujo de electrones PERDIDOS */}
+                                {config.action === 'pierde' && (
+                                    <g>
+                                        <path d="M 225 84 Q 270 36 332 62" fill="none" stroke="#f43f5e" strokeWidth="3.5" strokeDasharray="6 5" className="animate-dashFlow" markerEnd="url(#arr-r)"/>
+                                        <path d="M 225 150 Q 270 190 332 168" fill="none" stroke="#f43f5e" strokeWidth="3.5" strokeDasharray="6 5" className="animate-dashFlow" markerEnd="url(#arr-r)"/>
+                                        <circle cx="305" cy="54" r="10" fill="#f43f5e" stroke="#fff" strokeWidth="1.5" />
+                                        <text x="305" y="58" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="900">e⁻</text>
+                                        <circle cx="305" cy="176" r="10" fill="#f43f5e" stroke="#fff" strokeWidth="1.5" />
+                                        <text x="305" y="180" textAnchor="middle" fill="#fff" fontSize="11" fontWeight="900">e⁻</text>
+                                        <rect x="200" y="18" width="144" height="24" rx="10" fill="rgba(244,63,94,0.16)" stroke="#f43f5e" strokeWidth="1.5" />
+                                        <text x="272" y="34" textAnchor="middle" fill="#fda4af" fontSize="12" fontWeight="900">Pierde {config.n} e⁻</text>
+                                    </g>
+                                )}
+
+                                <text x="180" y="218" textAnchor="middle" fill="#94a3b8" fontSize="12" fontWeight="800">
+                                    {isNeg ? 'Exceso de electrones → Carga Negativa (−)' : isPos ? 'Déficit de electrones → Carga Positiva (+)' : 'Estado inicial en equilibrio eléctrico'}
+                                </text>
+                            </g>
+                        );
+                    })()}
+
+                    {/* 3. VECTORES 1D COLINEALES */}
+                    {config.type === 'vectors_1d' && (
+                        <g>
+                            <line x1="30" y1="120" x2="330" y2="120" stroke="#475569" strokeWidth="2" strokeDasharray="5 5" />
+                            <circle cx="58" cy="120" r="20" fill="url(#gradNeg)" stroke="#fff" strokeWidth="2" />
+                            <text x="58" y="126" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="900">A (−)</text>
+
+                            <circle cx="185" cy="120" r="22" fill="url(#gradPos)" stroke="#fde047" strokeWidth="3" />
+                            <text x="185" y="126" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="900">B (+)</text>
+
+                            <circle cx="305" cy="120" r="20" fill="url(#gradPos)" stroke="#fff" strokeWidth="2" />
+                            <text x="305" y="126" textAnchor="middle" fill="#fff" fontSize="16" fontWeight="900">C (+)</text>
+
+                            {config.step >= 1 && (
+                                <g filter="url(#neonGlow)">
+                                    <line x1="160" y1="96" x2="108" y2="96" stroke="#facc15" strokeWidth="4" markerEnd="url(#arr-y)"/>
+                                    <text x="134" y="84" textAnchor="middle" fill="#fde047" fontSize="13" fontWeight="900">F_AB = {config.f1} N</text>
+                                </g>
+                            )}
+                            {config.step >= 2 && (
+                                <g filter="url(#neonGlow)">
+                                    <line x1="160" y1="144" x2="92" y2="144" stroke="#38bdf8" strokeWidth="4" markerEnd="url(#arr-c)"/>
+                                    <text x="126" y="164" textAnchor="middle" fill="#7dd3fc" fontSize="13" fontWeight="900">F_CB = {config.f2} N</text>
+                                </g>
+                            )}
+                            {config.step >= 3 && (
+                                <g filter="url(#neonGlow)">
+                                    <line x1="160" y1="120" x2="86" y2="120" stroke="#10b981" strokeWidth="6" markerEnd="url(#arr-g)"/>
+                                    <rect x="95" y="192" width="170" height="30" rx="15" fill="#059669" stroke="#34d399" strokeWidth="2" />
+                                    <text x="180" y="212" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">Resultante: {config.res} N (←)</text>
+                                </g>
+                            )}
+                        </g>
+                    )}
+
+                    {/* 4. VECTORES 2D ORTOGONALES */}
+                    {config.type === 'vectors_2d' && (
+                        <g>
+                            <line x1="75" y1="175" x2="185" y2="175" stroke="#475569" strokeWidth="2" strokeDasharray="4 4"/>
+                            <line x1="185" y1="55" x2="185" y2="175" stroke="#475569" strokeWidth="2" strokeDasharray="4 4"/>
+                            {/* Símbolo de ángulo recto 90° */}
+                            <rect x="185" y="161" width="14" height="14" fill="none" stroke="#94a3b8" strokeWidth="1.5" />
+
+                            <circle cx="75" cy="175" r="18" fill="url(#gradPos)" stroke="#fff" strokeWidth="2" />
+                            <text x="75" y="180" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">A+</text>
+
+                            <circle cx="185" cy="175" r="20" fill="url(#gradPos)" stroke="#fde047" strokeWidth="3" />
+                            <text x="185" y="180" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">B+</text>
+
+                            <circle cx="185" cy="55" r="18" fill="url(#gradNeg)" stroke="#fff" strokeWidth="2" />
+                            <text x="185" y="60" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">C−</text>
+
+                            {config.step >= 1 && (
+                                <g filter="url(#neonGlow)">
+                                    <line x1="205" y1="175" x2="270" y2="175" stroke="#facc15" strokeWidth="4" markerEnd="url(#arr-y)"/>
+                                    <text x="242" y="198" textAnchor="middle" fill="#fde047" fontSize="13" fontWeight="900">F₁ = {config.f1} N</text>
+                                </g>
+                            )}
+                            {config.step >= 2 && (
+                                <g filter="url(#neonGlow)">
+                                    <line x1="185" y1="155" x2="185" y2="95" stroke="#38bdf8" strokeWidth="4" markerEnd="url(#arr-c)"/>
+                                    <text x="142" y="125" textAnchor="middle" fill="#7dd3fc" fontSize="13" fontWeight="900">F₂ = {config.f2} N</text>
+                                </g>
+                            )}
+                            {config.step >= 3 && (
+                                <g filter="url(#neonGlow)">
+                                    {/* Proyecciones del paralelogramo */}
+                                    <line x1="270" y1="175" x2="270" y2="95" stroke="rgba(16,185,129,0.5)" strokeWidth="1.5" strokeDasharray="4 4"/>
+                                    <line x1="185" y1="95" x2="270" y2="95" stroke="rgba(16,185,129,0.5)" strokeWidth="1.5" strokeDasharray="4 4"/>
+                                    <line x1="198" y1="162" x2="268" y2="97" stroke="#10b981" strokeWidth="5" markerEnd="url(#arr-g)"/>
+                                    <rect x="242" y="55" width="96" height="28" rx="14" fill="#059669" stroke="#34d399" strokeWidth="2" />
+                                    <text x="290" y="74" textAnchor="middle" fill="#fff" fontSize="14" fontWeight="900">R = {config.res} N</text>
+                                </g>
+                            )}
+                        </g>
+                    )}
+                </svg>
+            );
+        };
+
+        // 14 Ejercicios verificados con explicaciones enriquecidas y notación estandarizada
+        const EXERCISES = [
+            {
+                id: 1, title: "Ejercicio 1", subtitle: "Pág. 6 · Cuantización", cardGradient: "from-blue-600/40 to-cyan-600/40", badgeColor: "bg-blue-500",
+                enunciado: () => <span>Una esfera gana <MathDisplay inline latex="10^{20}" /> electrones por frotamiento. Determine la cantidad de carga que presenta si inicialmente estaba neutra.</span>,
+                steps: [
+                    { latex: String.raw`n = 10^{20} \text{ electrones (ganados)}`, propertyText: "1. Datos iniciales", detail: "Al ganar electrones, la esfera tendrá exceso de carga negativa.", robotSpeech: "Identificamos la cantidad de electrones transferidos.", graphic: { type: 'transfer', obj: 'Esfera neutra' } },
+                    { latex: String.raw`Q = n \cdot q_{e^-}`, propertyText: "2. Fórmula de cuantización", detail: "La carga eléctrica total siempre es un múltiplo entero de la carga del electrón.", robotSpeech: "Aplicamos la ley de cuantización de la carga.", graphic: { type: 'transfer', action: 'gana', n: '10²⁰', obj: 'Esfera' } },
+                    { latex: String.raw`Q = (10^{20}) \cdot (-1,6 \times 10^{-19}\text{ C})`, propertyText: "3. Sustitución", detail: "Reemplazamos la carga elemental del electrón: −1,6 × 10⁻¹⁹ C.", robotSpeech: "Sumamos los exponentes de base 10: 20 − 19 = 1." },
+                    { latex: String.raw`Q = -1,6 \times 10^{1}\text{ C} = \mathbf{-16\text{ C}}`, propertyText: "4. Resultado final", detail: "La esfera queda electrizada negativamente con −16 Coulombs.", robotSpeech: "¡Exacto! Como ganó electrones, su carga final es −16 C.", graphic: { type: 'transfer', action: 'gana', n: '10²⁰', obj: 'Esfera', val: '-16 C' } }
+                ]
+            },
+            {
+                id: 2, title: "Ejercicio 2", subtitle: "Pág. 6 · Vectores 1D", cardGradient: "from-purple-600/40 to-fuchsia-600/40", badgeColor: "bg-purple-500",
+                enunciado: () => <span>Las partículas A, B y C son colineales. B repele a C con 18 N y A atrae a B con 12 N. Halle el módulo de la fuerza resultante sobre B.</span>,
+                steps: [
+                    { latex: String.raw`\text{A }(-)\ \cdots\ \text{B }(+)\ \cdots\ \text{C }(+)`, propertyText: "1. Diagrama colineal", detail: "Ubicamos las tres cargas sobre una misma línea horizontal para analizar las fuerzas sobre B.", robotSpeech: "Observa el esquema: nos enfocamos únicamente en las fuerzas que actúan sobre B.", graphic: { type: 'vectors_1d', step: 0 } },
+                    { latex: String.raw`F_{AB} = 12\text{ N}\ (\leftarrow)`, propertyText: "2. Atracción de A sobre B", detail: "Como A atrae a B, la fuerza jala a B hacia la izquierda.", robotSpeech: "A jala a B hacia la izquierda con 12 N.", graphic: { type: 'vectors_1d', step: 1, f1: 12 } },
+                    { latex: String.raw`F_{CB} = 18\text{ N}\ (\leftarrow)`, propertyText: "3. Repulsión de C sobre B", detail: "Como B y C se repelen, C empuja a B también hacia la izquierda.", robotSpeech: "C empuja a B en el mismo sentido (izquierda) con 18 N.", graphic: { type: 'vectors_1d', step: 2, f1: 12, f2: 18 } },
+                    { latex: String.raw`F_R = 12 + 18 = \mathbf{30\text{ N}}`, propertyText: "4. Suma vectorial", detail: "Al tener la misma dirección y sentido, los módulos se suman directamente.", robotSpeech: "¡Listo! Ambas fuerzas se refuerzan dando 30 N hacia la izquierda.", graphic: { type: 'vectors_1d', step: 3, f1: 12, f2: 18, res: 30 } }
+                ]
+            },
+            {
+                id: 3, title: "Ejercicio 3", subtitle: "Pág. 6 · Ley de Coulomb", cardGradient: "from-emerald-600/40 to-green-600/40", badgeColor: "bg-emerald-500",
+                enunciado: () => <span>Determine el módulo de la fuerza de repulsión entre <MathDisplay inline latex="+10^{-4}\text{ C}" /> y <MathDisplay inline latex="+2\times10^{-4}\text{ C}" /> separadas 3 m.</span>,
+                steps: [
+                    { latex: String.raw`F = K \frac{|q_1|\cdot|q_2|}{d^2}`, propertyText: "1. Ley de Coulomb", detail: "Ambas cargas son positivas, por lo que experimentan una fuerza de repulsión.", robotSpeech: "Usamos la constante eléctrica K = 9 × 10⁹ N·m²/C².", graphic: { type: 'coulomb', q1: '+', q2: '+', l1: '+10⁻⁴ C', l2: '+2×10⁻⁴ C', d: '3 m', repel: true } },
+                    { latex: String.raw`F = (9 \times 10^9) \frac{(10^{-4})(2 \times 10^{-4})}{3^2}`, propertyText: "2. Sustitución", detail: "La distancia ya está en metros (3 m), así que reemplazamos directamente.", robotSpeech: "Elevamos la distancia al cuadrado: 3² = 9." },
+                    { latex: String.raw`F = \frac{\cancel{9} \cdot 2 \cdot 10^{9-4-4}}{\cancel{9}}`, propertyText: "3. Simplificación", detail: "Cancelamos el factor 9 en numerador y denominador y operamos los exponentes.", robotSpeech: "¡Simplificar siempre es más rápido que multiplicar!" },
+                    { latex: String.raw`F = 2 \times 10^1 = \mathbf{20\text{ N}}`, propertyText: "4. Resultado", detail: "Las cargas se repelen mutuamente con una fuerza de 20 Newtons.", robotSpeech: "¡Excelente! Fuerza de repulsión igual a 20 N.", graphic: { type: 'coulomb', q1: '+', q2: '+', l1: '+10⁻⁴ C', l2: '+2×10⁻⁴ C', d: '3 m', f: '20 N', repel: true } }
+                ]
+            },
+            {
+                id: 4, title: "Ejercicio 4", subtitle: "Pág. 6 · Conversiones", cardGradient: "from-orange-600/40 to-red-600/40", badgeColor: "bg-orange-500",
+                enunciado: () => <span>Halle la fuerza eléctrica entre dos partículas separadas 200 cm con cargas <MathDisplay inline latex="+4\text{ mC}" /> y <MathDisplay inline latex="-1\ \mu\text{C}" />.</span>,
+                steps: [
+                    { latex: String.raw`d = 200\text{ cm} = 2\text{ m}`, propertyText: "1. Conversión de distancia", detail: "En el Sistema Internacional, la distancia siempre debe expresarse en metros.", robotSpeech: "Dividimos 200 entre 100 para obtener 2 metros.", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '+4 mC', l2: '−1 μC', d: '2 m', repel: false } },
+                    { latex: String.raw`|q_1| = 4\times10^{-3}\text{ C}, \quad |q_2| = 10^{-6}\text{ C}`, propertyText: "2. Prefijos métricos", detail: "Mili (m) equivale a 10⁻³ y micro (μ) equivale a 10⁻⁶.", robotSpeech: "Recuerda usar el valor absoluto de las cargas en la fórmula." },
+                    { latex: String.raw`F = (9 \times 10^9) \frac{(4\times10^{-3})(10^{-6})}{2^2}`, propertyText: "3. Ley de Coulomb", detail: "Las potencias de 10 se anulan: 9 − 3 − 6 = 0 (y 10⁰ = 1).", robotSpeech: "Cancelamos el 4 de arriba con el 2² = 4 de abajo." },
+                    { latex: String.raw`F = \frac{9 \cdot \cancel{4} \cdot 10^0}{\cancel{4}} = \mathbf{9\text{ N}}`, propertyText: "4. Resultado", detail: "Al tener signos opuestos, las partículas se atraen con 9 N.", robotSpeech: "¡Perfecto! Fuerza de atracción de 9 Newtons.", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '+4 mC', l2: '−1 μC', d: '2 m', f: '9 N', repel: false } }
+                ]
+            },
+            {
+                id: 5, title: "Ejercicio 5", subtitle: "Pág. 7 · Hallar Distancia", cardGradient: "from-sky-600/40 to-blue-600/40", badgeColor: "bg-sky-500",
+                enunciado: () => <span>Dos cargas de <MathDisplay inline latex="2\times10^{-4}\text{ C}" /> y <MathDisplay inline latex="5\times10^{-5}\text{ C}" /> se atraen con 10 N. Determine la distancia que las separa.</span>,
+                steps: [
+                    { latex: String.raw`d^2 = K \frac{|q_1|\cdot|q_2|}{F}`, propertyText: "1. Despeje de distancia", detail: "Intercambiamos d² y F en la ecuación de Coulomb para aislar la incógnita.", robotSpeech: "Despejamos d² antes de reemplazar los números.", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '2×10⁻⁴ C', l2: '5×10⁻⁵ C', f: '10 N', repel: false } },
+                    { latex: String.raw`d^2 = (9 \times 10^9) \frac{(2 \times 10^{-4})(5 \times 10^{-5})}{10}`, propertyText: "2. Sustitución", detail: "Multiplicamos 2 × 5 = 10 y sumamos los exponentes: 9 − 4 − 5 = 0.", robotSpeech: "Observa cómo el 10 del numerador se cancela con el 10 de abajo." },
+                    { latex: String.raw`d^2 = \frac{9 \cdot \cancel{10} \cdot 10^0}{\cancel{10}} = 9`, propertyText: "3. Simplificación", detail: "Nos queda una ecuación cuadrática directa: d² = 9.", robotSpeech: "Ahora solo extraemos la raíz cuadrada." },
+                    { latex: String.raw`d = \sqrt{9} = \mathbf{3\text{ m}}`, propertyText: "4. Resultado", detail: "La separación exacta entre ambas partículas es de 3 metros.", robotSpeech: "¡Genial! La distancia es exactamente 3 metros.", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '2×10⁻⁴ C', l2: '5×10⁻⁵ C', d: '3 m', f: '10 N', repel: false } }
+                ]
+            },
+            {
+                id: 6, title: "Ejercicio 6", subtitle: "Pág. 7 · Frotamiento", cardGradient: "from-pink-600/40 to-rose-600/40", badgeColor: "bg-pink-500",
+                enunciado: () => <span>Un peine inicialmente neutro adquiere <MathDisplay inline latex="10^{23}" /> electrones por frotamiento. Indique su carga final.</span>,
+                steps: [
+                    { latex: String.raw`n = 10^{23}\text{ e}^-\ (\text{ganados})`, propertyText: "1. Datos", detail: "Al frotar el peine, este atrapa electrones externos y adquiere carga negativa.", robotSpeech: "El peine ganó una enorme cantidad de electrones.", graphic: { type: 'transfer', action: 'gana', n: '10²³', obj: 'Peine' } },
+                    { latex: String.raw`Q = (10^{23}) \cdot (-1,6 \times 10^{-19}\text{ C})`, propertyText: "2. Cuantización", detail: "Multiplicamos el número de electrones por la carga elemental negativa.", robotSpeech: "Operamos las potencias de base 10: 23 − 19 = 4." },
+                    { latex: String.raw`Q = -1,6 \times 10^{4}\text{ C}`, propertyText: "3. Notación científica", detail: "Corremos la coma decimal 4 lugares hacia la derecha.", robotSpeech: "Multiplicamos −1,6 por 10 000." },
+                    { latex: String.raw`Q = \mathbf{-16\ 000\text{ C}}`, propertyText: "4. Resultado", detail: "El peine se electriza negativamente con −16 000 Coulombs.", robotSpeech: "¡Correcto! Carga final de −16 000 C.", graphic: { type: 'transfer', action: 'gana', n: '10²³', obj: 'Peine', val: '-16 000 C' } }
+                ]
+            },
+            {
+                id: 7, title: "Ejercicio 7", subtitle: "Pág. 7 · Fotoeléctrico", cardGradient: "from-yellow-600/40 to-amber-600/40", badgeColor: "bg-yellow-500",
+                enunciado: () => <span>Por efecto fotoeléctrico escaparon <MathDisplay inline latex="10^{20}" /> electrones de un metal neutro. ¿Cuál es su carga final?</span>,
+                steps: [
+                    { latex: String.raw`n = 10^{20}\text{ e}^-\ (\text{perdidos})`, propertyText: "1. Pérdida de electrones", detail: "Cuando los electrones escapan, el metal queda con déficit de cargas negativas.", robotSpeech: "Perder electrones significa quedar con carga positiva (+).", graphic: { type: 'transfer', action: 'pierde', n: '10²⁰', obj: 'Metal' } },
+                    { latex: String.raw`Q = + n \cdot |q_{e^-}|`, propertyText: "2. Fórmula positiva", detail: "Usamos el signo positivo (+) por tratarse de electrones perdidos.", robotSpeech: "Aplicamos la fórmula con signo positivo." },
+                    { latex: String.raw`Q = +(10^{20}) \cdot (1,6 \times 10^{-19}\text{ C})`, propertyText: "3. Sustitución", detail: "Sumamos los exponentes: 20 − 19 = 1.", robotSpeech: "1,6 multiplicado por 10 nos da 16." },
+                    { latex: String.raw`Q = \mathbf{+16\text{ C}}`, propertyText: "4. Resultado", detail: "El material adquiere una carga positiva de +16 Coulombs.", robotSpeech: "¡Excelente! Carga positiva de +16 C.", graphic: { type: 'transfer', action: 'pierde', n: '10²⁰', obj: 'Metal', val: '+16 C' } }
+                ]
+            },
+            {
+                id: 8, title: "Ejercicio 8", subtitle: "Pág. 8 · MiliCoulombs", cardGradient: "from-teal-600/40 to-emerald-600/40", badgeColor: "bg-teal-500",
+                enunciado: () => <span>Una esfera neutra gana <MathDisplay inline latex="3\times10^{17}" /> electrones. Determine la carga adquirida en miliCoulombs (mC).</span>,
+                steps: [
+                    { latex: String.raw`Q = n \cdot q_{e^-}`, propertyText: "1. Fórmula", detail: "Al ganar electrones, la carga resultante será negativa.", robotSpeech: "Planteamos la ecuación de cuantización.", graphic: { type: 'transfer', action: 'gana', n: '3×10¹⁷', obj: 'Esfera' } },
+                    { latex: String.raw`Q = (3\times10^{17}) \cdot (-1,6 \times 10^{-19}\text{ C})`, propertyText: "2. Sustitución", detail: "Multiplicamos 3 × (−1,6) = −4,8 y sumamos exponentes: 17 − 19 = −2.", robotSpeech: "Agrupamos coeficientes por un lado y potencias de 10 por otro." },
+                    { latex: String.raw`Q = -4,8 \times 10^{-2}\text{ C} = -48 \times 10^{-3}\text{ C}`, propertyText: "3. Ajuste a prefijo mili", detail: "Transformamos 10⁻² en 10⁻³ para expresar el resultado en miliCoulombs (mC).", robotSpeech: "Recuerda que 10⁻³ C equivale exactamente a 1 mC." },
+                    { latex: String.raw`Q = \mathbf{-48\text{ mC}}`, propertyText: "4. Resultado", detail: "La esfera adquiere una carga de −48 miliCoulombs.", robotSpeech: "¡Perfecto! Respuesta elegante: −48 mC.", graphic: { type: 'transfer', action: 'gana', n: '3×10¹⁷', obj: 'Esfera', val: '-48 mC' } }
+                ]
+            },
+            {
+                id: 9, title: "Ejercicio 9", subtitle: "Pág. 8 · Vectores 2D", cardGradient: "from-indigo-600/40 to-violet-600/40", badgeColor: "bg-indigo-500",
+                enunciado: () => <span>Las cargas A, B y C forman un ángulo recto en B. Las fuerzas sobre B son 6 N (horizontal) y 8 N (vertical). Halle la resultante.</span>,
+                steps: [
+                    { latex: String.raw`\theta = 90^\circ \quad (\text{vectores ortogonales})`, propertyText: "1. Geometría del sistema", detail: "Las fuerzas sobre B son perpendiculares entre sí.", robotSpeech: "Observa el ángulo de 90° en la partícula B.", graphic: { type: 'vectors_2d', step: 0 } },
+                    { latex: String.raw`F_1 = 6\text{ N}\ (\rightarrow)`, propertyText: "2. Fuerza horizontal", detail: "A repele a B hacia la derecha con 6 N.", robotSpeech: "Trazamos el vector horizontal de 6 N.", graphic: { type: 'vectors_2d', step: 1, f1: 6 } },
+                    { latex: String.raw`F_2 = 8\text{ N}\ (\uparrow)`, propertyText: "3. Fuerza vertical", detail: "C atrae a B hacia arriba con 8 N.", robotSpeech: "Trazamos el vector vertical de 8 N.", graphic: { type: 'vectors_2d', step: 2, f1: 6, f2: 8 } },
+                    { latex: String.raw`F_R = \sqrt{6^2 + 8^2} = \sqrt{36 + 64} = \sqrt{100}`, propertyText: "4. Teorema de Pitágoras", detail: "Para vectores perpendiculares, el módulo de la resultante se halla por Pitágoras.", robotSpeech: "36 más 64 es 100. ¡Triángulo notable 3-4-5!" },
+                    { latex: String.raw`F_R = \mathbf{10\text{ N}}`, propertyText: "5. Resultado", detail: "La fuerza resultante diagonal sobre B tiene un módulo de 10 N.", robotSpeech: "¡Brillante! La resultante diagonal mide 10 Newtons.", graphic: { type: 'vectors_2d', step: 3, f1: 6, f2: 8, res: 10 } }
+                ]
+            },
+            {
+                id: 10, title: "Ejercicio 10", subtitle: "Pág. 8 · Coulomb Mixto", cardGradient: "from-lime-600/40 to-green-600/40", badgeColor: "bg-lime-600",
+                enunciado: () => <span>Determine la fuerza eléctrica entre dos cargas de <MathDisplay inline latex="+7\text{ mC}" /> y <MathDisplay inline latex="-1\ \mu\text{C}" /> separadas 3 m.</span>,
+                steps: [
+                    { latex: String.raw`F = K \frac{|q_1|\cdot|q_2|}{d^2}`, propertyText: "1. Ley de Coulomb", detail: "Signos distintos implican fuerza de atracción eléctrica.", robotSpeech: "Convertimos mili (10⁻³) y micro (10⁻⁶).", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '+7 mC', l2: '−1 μC', d: '3 m', repel: false } },
+                    { latex: String.raw`F = (9 \times 10^9) \frac{(7\times10^{-3})(10^{-6})}{3^2}`, propertyText: "2. Sustitución", detail: "Reemplazamos d = 3 m y las cargas en Coulombs.", robotSpeech: "Nota que 3² = 9 y los exponentes suman 9 − 3 − 6 = 0." },
+                    { latex: String.raw`F = \frac{\cancel{9} \cdot 7 \cdot 10^0}{\cancel{9}}`, propertyText: "3. Simplificación", detail: "Cancelamos el 9 arriba y abajo.", robotSpeech: "Todo se reduce a un cálculo limpio y directo." },
+                    { latex: String.raw`F = \mathbf{7\text{ N}}`, propertyText: "4. Resultado", detail: "Las cargas se atraen con una fuerza de 7 Newtons.", robotSpeech: "¡Listo! Fuerza de atracción igual a 7 N.", graphic: { type: 'coulomb', q1: '+', q2: '−', l1: '+7 mC', l2: '−1 μC', d: '3 m', f: '7 N', repel: false } }
+                ]
+            },
+            {
+                id: 11, title: "Ejercicio 11", subtitle: "Pág. 8 · Centímetros", cardGradient: "from-red-600/40 to-rose-600/40", badgeColor: "bg-red-500",
+                enunciado: () => <span>Dos partículas separadas 600 cm tienen cargas <MathDisplay inline latex="+8\times10^{-5}\text{ C}" /> y <MathDisplay inline latex="+2\times10^{-4}\text{ C}" />. Halle la fuerza de repulsión.</span>,
+                steps: [
+                    { latex: String.raw`d = 600\text{ cm} = 6\text{ m}`, propertyText: "1. Conversión a metros", detail: "600 cm equivalen exactamente a 6 metros.", robotSpeech: "Siempre convertimos centímetros a metros antes de operar.", graphic: { type: 'coulomb', q1: '+', q2: '+', l1: '+8×10⁻⁵ C', l2: '+2×10⁻⁴ C', d: '6 m', repel: true } },
+                    { latex: String.raw`F = (9 \times 10^9) \frac{(8\times10^{-5})(2\times10^{-4})}{6^2}`, propertyText: "2. Sustitución", detail: "Los exponentes se cancelan: 9 − 5 − 4 = 0.", robotSpeech: "Tenemos 6² = 36 en el denominador." },
+                    { latex: String.raw`F = \frac{\cancel{9}_1 \cdot 16 \cdot 10^0}{\cancel{36}_4} = \frac{16}{4}`, propertyText: "3. Simplificación", detail: "Sacamos novena a 9 y 36 (queda 4 abajo) y luego dividimos 16 entre 4.", robotSpeech: "Simplificar primero evita operar números grandes." },
+                    { latex: String.raw`F = \mathbf{4\text{ N}}`, propertyText: "4. Resultado", detail: "Las partículas se repelen con una fuerza de 4 Newtons.", robotSpeech: "¡Exacto! 16 entre 4 nos da 4 N.", graphic: { type: 'coulomb', q1: '+', q2: '+', l1: '+8×10⁻⁵ C', l2: '+2×10⁻⁴ C', d: '6 m', f: '4 N', repel: true } }
+                ]
+            },
+            {
+                id: 12, title: "Ejercicio 12", subtitle: "Pág. 9 · Proporcionalidad", cardGradient: "from-fuchsia-600/40 to-purple-600/40", badgeColor: "bg-fuchsia-500",
+                enunciado: () => <span>Dos cargas se repelen con 15 N. ¿Cuál será la nueva fuerza si cada partícula duplica su carga manteniendo la misma distancia?</span>,
+                steps: [
+                    { latex: String.raw`F_1 = K \frac{q_1 \cdot q_2}{d^2} = 15\text{ N}`, propertyText: "1. Estado inicial", detail: "La fuerza inicial vale 15 N para las cargas q₁ y q₂.", robotSpeech: "Guardamos la expresión original que vale 15 N.", graphic: { type: 'coulomb', q1: '+', q2: '+', l1: 'q₁', l2: 'q₂', d: 'd', f: '15 N', repel: true } },
+                    { latex: String.raw`F_2 = K \frac{(2q_1)(2q_2)}{d^2}`, propertyText: "2. Duplicación de cargas", detail: "Reemplazamos q₁ por 2q₁ y q₂ por 2q₂.", robotSpeech: "La distancia d no cambia en el denominador." },
+                    { latex: String.raw`F_2 = 4 \cdot \left( K \frac{q_1 \cdot q_2}{d^2} \right) = 4 \cdot F_1`, propertyText: "3. Factorización", detail: "Extraemos el producto 2 × 2 = 4 delante de la expresión original.", robotSpeech: "¡El factor 4 multiplica directamente a la fuerza inicial!" },
+                    { latex: String.raw`F_2 = 4 \cdot 15 = \mathbf{60\text{ N}}`, propertyText: "4. Resultado", detail: "Al duplicar ambas cargas, la fuerza eléctrica se cuadruplica a 60 N.", robotSpeech: "¡Genial! La nueva fuerza de repulsión es 60 N.", graphic: { type: 'coulomb', q1: '++', q2: '++', l1: '2q₁', l2: '2q₂', d: 'd', f: '60 N', repel: true } }
+                ]
+            },
+            {
+                id: 13, title: "Ejercicio 13", subtitle: "Pág. 9 · Hallar Electrones", cardGradient: "from-cyan-600/40 to-blue-600/40", badgeColor: "bg-cyan-500",
+                enunciado: () => <span>Un globo se electrizó con <MathDisplay inline latex="+40\ \mu\text{C}" />. ¿Cuántos electrones ganó o perdió?</span>,
+                steps: [
+                    { latex: String.raw`Q = +40\times10^{-6}\text{ C} > 0 \implies \text{perdió e}^-`, propertyText: "1. Análisis de signo", detail: "Como la carga final es positiva (+), el globo necesariamente perdió electrones.", robotSpeech: "Carga positiva siempre indica pérdida de electrones.", graphic: { type: 'transfer', obj: 'Globo' } },
+                    { latex: String.raw`n = \frac{|Q|}{|q_{e^-}|}`, propertyText: "2. Despeje de n", detail: "Dividimos la carga total entre la magnitud de la carga de un electrón.", robotSpeech: "Despejamos n de la fórmula de cuantización." },
+                    { latex: String.raw`n = \frac{40 \times 10^{-6}}{1,6 \times 10^{-19}} = 25 \times 10^{13}`, propertyText: "3. División", detail: "40 ÷ 1,6 = 25, y en exponentes: −6 − (−19) = +13.", robotSpeech: "Ajustamos 25 × 10¹³ a notación científica estándar." },
+                    { latex: String.raw`n = \mathbf{2,5 \times 10^{14}\text{ electrones perdidos}}`, propertyText: "4. Resultado", detail: "El globo perdió 2,5 × 10¹⁴ electrones para quedar con +40 μC.", robotSpeech: "¡Exacto! Perdió 250 billones de electrones.", graphic: { type: 'transfer', action: 'pierde', n: '2,5×10¹⁴', obj: 'Globo', val: '+40 μC' } }
+                ]
+            },
+            {
+                id: 14, title: "Ejercicio 14", subtitle: "Pág. 9 · Termoiónico", cardGradient: "from-amber-600/40 to-orange-600/40", badgeColor: "bg-amber-500",
+                enunciado: () => <span>Por calentamiento extremo escapan <MathDisplay inline latex="10^{27}" /> electrones de un metal neutro. ¿Cuál será su carga final?</span>,
+                steps: [
+                    { latex: String.raw`n = 10^{27}\text{ e}^-\ (\text{perdidos})`, propertyText: "1. Emisión termoiónica", detail: "El calor intenso libera electrones del metal, dejándolo con carga positiva.", robotSpeech: "Los electrones escapan por efecto térmico.", graphic: { type: 'transfer', action: 'pierde', n: '10²⁷', obj: 'Metal' } },
+                    { latex: String.raw`Q = +(10^{27}) \cdot (1,6 \times 10^{-19}\text{ C})`, propertyText: "2. Sustitución", detail: "Multiplicamos con signo positivo por tratarse de electrones perdidos.", robotSpeech: "Reemplazamos en la fórmula de cuantización." },
+                    { latex: String.raw`Q = +1,6 \times 10^{27 - 19}\text{ C}`, propertyText: "3. Potencias de 10", detail: "Restamos los exponentes: 27 − 19 = 8.", robotSpeech: "¡Un exponente gigantesco en electrostática!" },
+                    { latex: String.raw`Q = \mathbf{+1,6 \times 10^{8}\text{ C}}`, propertyText: "4. Resultado", detail: "La carga adquirida es de +1,6 × 10⁸ Coulombs.", robotSpeech: "¡Completado! Una carga colosal de +1,6 × 10⁸ C.", graphic: { type: 'transfer', action: 'pierde', n: '10²⁷', obj: 'Metal', val: '+1,6×10⁸ C' } }
+                ]
+            }
+        ];
+
+        const FloatingBackground = memo(() => {
+            const symbols = ['+', '−', 'e⁻', 'Q', 'F', 'C', 'μC', 'K', 'd²'];
+            const elements = Array.from({ length: 28 }).map((_, i) => ({
+                id: i, symbol: symbols[i % symbols.length], left: `${Math.random() * 100}%`,
+                animationDuration: `${12 + Math.random() * 20}s`, animationDelay: `-${Math.random() * 25}s`,
+                fontSize: `${1 + Math.random() * 2.2}rem`, opacity: 0.06 + Math.random() * 0.12
+            }));
+            return (
+                <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+                    {elements.map((el) => (
+                        <div key={el.id} className="absolute text-white font-black animate-floatUp select-none" style={{ left: el.left, bottom: '-15%', fontSize: el.fontSize, opacity: el.opacity, animationDuration: el.animationDuration, animationDelay: el.animationDelay }}>
+                            {el.symbol}
+                        </div>
+                    ))}
+                </div>
+            );
+        });
+
+        const Confetti = memo(() => {
+            const colors = ['#fde047', '#60a5fa', '#f472b6', '#34d399', '#a78bfa', '#fb923c'];
+            const pieces = Array.from({ length: 90 }).map((_, i) => ({
+                id: i, left: `${50 + (Math.random() * 20 - 10)}%`, color: colors[i % colors.length],
+                tx: `${(Math.random() - 0.5) * 750}px`, ty: `${(Math.random() - 1) * 750}px`, rot: `${Math.random() * 720}deg`, delay: `${Math.random() * 0.2}s`
+            }));
+            return (
+                <div className="absolute inset-0 pointer-events-none z-50 flex items-center justify-center overflow-hidden">
+                    {pieces.map((p) => (
+                        <div key={p.id} className="absolute w-3.5 h-3.5 rounded-full animate-confettiExplosion" style={{ backgroundColor: p.color, '--tx': p.tx, '--ty': p.ty, '--rot': p.rot, animationDelay: p.delay, left: p.left, top: '50%' }} />
+                    ))}
+                </div>
+            );
+        });
+
+        const RobotAssistant = ({ step, maxSteps }) => {
+            const isFinalStep = step >= maxSteps;
+            const isThinking = step === maxSteps - 1;
+            const getContainerAnim = () => isFinalStep ? 'animate-robotJump' : isThinking ? 'animate-robotThinkTilt' : 'animate-robotFloat';
+            const getArmLAnim = () => isFinalStep ? 'rotate-[150deg] animate-pulse' : step > 0 ? 'animate-robotTalkArmL' : 'rotate-45';
+            const getArmRAnim = () => isFinalStep ? '-rotate-[150deg] animate-pulse' : step > 0 ? 'animate-robotTalkArmR' : '-rotate-45';
+
+            return (
+                <div className={`relative flex flex-col items-center drop-shadow-lg select-none ${getContainerAnim()}`}>
+                    <div className="relative z-0 flex flex-col items-center translate-y-1">
+                        <div className={`w-3.5 h-3.5 rounded-full shadow-[0_0_10px_currentColor] z-10 ${isFinalStep ? 'text-emerald-400 bg-emerald-400' : 'text-yellow-400 bg-yellow-400 animate-pulse'}`}></div>
+                        <div className="w-1.5 h-3.5 bg-slate-300"></div>
+                    </div>
+                    <div className="relative z-10 w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-white to-slate-200 rounded-[1.1rem] border-[3px] border-indigo-400 shadow-xl flex flex-col items-center justify-center p-1.5">
+                        <div className="w-full h-full bg-slate-900 rounded-lg flex flex-col items-center justify-center p-1 border-2 border-indigo-500">
+                            <div className="w-full flex justify-between px-1.5">
+                                <div className={`w-2.5 h-2.5 rounded-full ${isFinalStep ? 'bg-emerald-400' : 'bg-cyan-400 animate-pulse'}`}></div>
+                                <div className={`w-2.5 h-2.5 rounded-full ${isFinalStep ? 'bg-emerald-400' : 'bg-cyan-400 animate-pulse'}`}></div>
+                            </div>
+                            <div className={`mt-1.5 rounded-full ${isFinalStep ? 'w-5 h-2.5 bg-rose-400 rounded-b-full' : 'w-4 h-1 bg-cyan-300'}`}></div>
+                        </div>
+                    </div>
+                    <div className={`absolute top-1/2 -left-2 w-2.5 h-4 bg-slate-200 border-2 border-indigo-400 rounded-full z-0 origin-top ${getArmLAnim()}`}></div>
+                    <div className={`absolute top-1/2 -right-2 w-2.5 h-4 bg-slate-200 border-2 border-indigo-400 rounded-full z-0 origin-top ${getArmRAnim()}`}></div>
+                </div>
+            );
+        };
+
+        function App() {
+            const [view, setView] = useState('home');
+            const [exIdx, setExIdx] = useState(0);
+            const [step, setStep] = useState(0);
+            const [isMuted, setIsMuted] = useState(false);
+            const scrollContainerRef = useRef(null);
+
+            const currentExercise = EXERCISES[exIdx];
+            const maxSteps = currentExercise.steps.length - 1;
+            const currentStepData = currentExercise.steps[step];
+            const EnunciadoText = currentExercise.enunciado;
+            const activeGraphic = currentStepData.graphic || currentExercise.steps.slice(0, step + 1).reverse().find(s => s.graphic)?.graphic || null;
+
+            const handleInteraction = () => AudioController.init();
+
+            useEffect(() => {
+                if (scrollContainerRef.current) {
+                    scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+                }
+            }, [step, exIdx, view]);
+
+            const startExercise = (index) => {
+                handleInteraction();
+                AudioController.play('swoosh');
+                setExIdx(index);
+                setStep(0);
+                setView('lab');
+            };
+
+            const nextStep = () => {
+                handleInteraction();
+                if (step < maxSteps) {
+                    const next = step + 1;
+                    setStep(next);
+                    if (next === maxSteps) AudioController.play('success');
+                    else AudioController.play('pop');
+                } else if (exIdx < EXERCISES.length - 1) {
+                    AudioController.play('swoosh');
+                    setExIdx(exIdx + 1);
+                    setStep(0);
+                } else {
+                    AudioController.play('swoosh');
+                    setView('home');
+                }
+            };
+
+            const prevStep = () => {
+                handleInteraction();
+                if (step > 0) {
+                    setStep(step - 1);
+                    AudioController.play('pop-reverse');
+                }
+            };
+
+            const toggleMute = () => { handleInteraction(); setIsMuted(AudioController.toggleMute()); };
+
+            if (view === 'home') {
+                return (
+                    <div className="w-screen h-[100dvh] bg-gradient-to-br from-[#020617] via-[#0f172a] to-[#1e3a8a] flex flex-col items-center justify-start p-4 sm:p-6 relative font-fun overflow-y-auto overflow-x-hidden scrollbar-hide">
+                        <FloatingBackground />
+
+                        <div className="w-[96%] max-w-[1400px] z-20 flex items-center justify-between mb-6 mt-1">
+                            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-2xl border-2 border-yellow-300 bg-white/15 backdrop-blur-md text-yellow-300 font-black tracking-wider uppercase shadow-md text-sm sm:text-base">
+                                <Rocket className="w-5 h-5 text-yellow-300" /> TuProfe20 Lab
+                            </div>
+                            <button onClick={toggleMute} className="p-2.5 rounded-2xl bg-white/20 border-2 border-white/30 backdrop-blur-md text-white hover:bg-white/30 transition-all active:scale-95">
+                                {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                            </button>
+                        </div>
+
+                        <div className="relative z-10 text-center w-[96%] max-w-[1400px] flex flex-col items-center">
+                            <h1 className="text-4xl sm:text-6xl lg:text-7xl font-black text-white mb-3 drop-shadow-[0_6px_0_rgba(0,0,0,0.5)] tracking-tight leading-none uppercase">
+                                Laboratorio de <span className="text-yellow-400 underline decoration-wavy decoration-cyan-400">Fuerza Eléctrica</span>
+                            </h1>
+                            <p className="text-base sm:text-xl text-blue-200 mb-7 font-bold max-w-3xl leading-relaxed bg-black/25 px-5 py-3 rounded-2xl border border-white/10 backdrop-blur-sm">
+                                14 retos interactivos verificados de Cuantización, Ley de Coulomb y Vectores. Observa cómo los esquemas físicos reaccionan a cada ecuación. ⚡🤖
+                            </p>
+
+                            <div className="w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4 mb-10">
+                                {EXERCISES.map((ex, idx) => (
+                                    <button
+                                        key={ex.id}
+                                        onClick={() => startExercise(idx)}
+                                        className="group text-left p-4 rounded-[1.4rem] bg-slate-900/60 backdrop-blur-xl border-[3px] border-white/20 hover:border-yellow-300 hover:-translate-y-1.5 hover:shadow-[0_15px_30px_rgba(59,130,246,0.35)] transition-all flex flex-col relative overflow-hidden shadow-lg min-h-[10.5rem]"
+                                    >
+                                        <div className={`absolute inset-0 bg-gradient-to-br ${ex.cardGradient}`}></div>
+                                        <div className="relative z-10 flex-1 flex flex-col">
+                                            <div className="flex items-center justify-between mb-2">
+                                                <span className={`${ex.badgeColor} text-white text-xs font-black px-2.5 py-1 rounded-md uppercase tracking-widest shadow-sm`}>
+                                                    Reto {ex.id}
+                                                </span>
+                                                <span className="bg-black/35 text-white text-xs font-bold px-2 py-0.5 rounded-md border border-white/10">
+                                                    {ex.steps.length} pasos
+                                                </span>
+                                            </div>
+                                            <div className="flex-1 my-1.5 bg-white/95 rounded-xl p-2.5 text-slate-900 shadow-inner flex items-center justify-center w-full pointer-events-none math-card">
+                                                <MathDisplay latex={ex.steps[0].latex} />
+                                            </div>
+                                            <div className="text-white text-sm font-black text-center mt-1.5 drop-shadow-md">
+                                                {ex.subtitle}
+                                            </div>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div className="w-screen h-[100dvh] bg-gradient-to-br from-[#020617] via-[#1e3a8a] to-[#312e81] text-slate-800 flex flex-col p-2 sm:p-3 relative font-fun overflow-hidden">
+                    <FloatingBackground />
+                    {step === maxSteps && <Confetti />}
+
+                    {/* Navbar */}
+                    <div className="shrink-0 relative z-10 w-[97%] max-w-[1440px] mx-auto flex justify-between items-center mb-2.5">
+                        <button onClick={() => { AudioController.play('swoosh'); setView('home'); }} className="flex items-center justify-center px-4 py-2 rounded-2xl bg-white/12 border-2 border-white/25 backdrop-blur-md text-white font-black hover:bg-white/25 transition-all text-sm sm:text-base">
+                            <Home className="w-5 h-5 sm:mr-2" />
+                            <span className="hidden sm:inline">Menú</span>
+                        </button>
+
+                        <div className="flex items-center gap-1.5 bg-black/40 p-1.5 rounded-2xl border-2 border-white/15 backdrop-blur-md overflow-x-auto scrollbar-hide max-w-[60vw]">
+                            {EXERCISES.map((ex, i) => (
+                                <button
+                                    key={ex.id}
+                                    onClick={() => startExercise(i)}
+                                    className={`shrink-0 w-8 h-8 sm:w-9 sm:h-9 rounded-xl font-black text-sm transition-all ${exIdx === i ? 'bg-yellow-400 text-slate-900 scale-110 shadow-[0_0_12px_rgba(250,204,21,0.7)] border-2 border-white' : 'text-white hover:bg-white/20'}`}
+                                >
+                                    {ex.id}
+                                </button>
+                            ))}
+                        </div>
+
+                        <button onClick={toggleMute} className="p-2.5 rounded-2xl bg-white/12 border-2 border-white/25 text-white hover:bg-white/25 transition-all">
+                            {isMuted ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
+                        </button>
+                    </div>
+
+                    {/* Tablero Principal */}
+                    <div className="flex-1 min-h-0 relative z-10 w-[97%] max-w-[1440px] mx-auto bg-white rounded-[2rem] border-[6px] border-slate-100 shadow-[0_30px_60px_rgba(0,0,0,0.6)] flex flex-col overflow-hidden">
+
+                        {/* Enunciado */}
+                        <div className="shrink-0 bg-[#0f172a] border-b-[4px] border-cyan-500 px-4 py-3 sm:px-6 shadow-md z-20">
+                            <div className="flex justify-between items-center w-full max-w-6xl mx-auto mb-1.5">
+                                <span className="bg-blue-500 text-white font-black text-xs sm:text-sm px-3 py-0.5 rounded-md uppercase tracking-widest">
+                                    {currentExercise.title}
+                                </span>
+                                <span className="text-cyan-300 font-bold text-xs sm:text-sm bg-white/10 px-3 py-0.5 rounded-md border border-white/15">
+                                    {currentExercise.subtitle}
+                                </span>
+                            </div>
+                            <div className="text-slate-100 font-bold text-base sm:text-lg md:text-xl text-center max-w-5xl mx-auto leading-snug math-enunciado">
+                                <EnunciadoText />
+                            </div>
+                        </div>
+
+                        {/* Split Panel 50% Esquema Físico / 50% Desarrollo Matemático */}
+                        <div className="flex-1 min-h-0 flex flex-col md:flex-row p-3 sm:p-4 gap-4 relative overflow-hidden bg-[#f1f5f9]">
+                            {/* Izquierda: Esquema Inmersivo */}
+                            <div className="w-full md:w-1/2 h-56 md:h-full bg-[#0b1120] border-[4px] border-slate-700 rounded-3xl shadow-xl flex flex-col items-center justify-center p-2 relative overflow-hidden shrink-0">
+                                <div className="absolute top-3 left-3 bg-yellow-400 text-slate-950 text-[11px] font-black px-3 py-1 rounded-full uppercase tracking-widest shadow-md z-10">
+                                    ⚡ Esquema Físico Dinámico
+                                </div>
+                                <div className="w-full h-full flex items-center justify-center animate-jellyPop" key={`${exIdx}-${step}`}>
+                                    <SchemaRenderer config={activeGraphic} step={step} isFinal={step === maxSteps} />
+                                </div>
+                            </div>
+
+                            {/* Derecha: Pasos Matemáticos */}
+                            <div ref={scrollContainerRef} className="w-full md:w-1/2 flex flex-col overflow-y-auto scrollbar-hide pb-4">
+                                <div className="flex flex-col gap-3 px-1">
+                                    {currentExercise.steps.slice(0, step + 1).map((s, idx) => (
+                                        <div key={`${exIdx}-${idx}`} className={`p-4 rounded-2xl border-[3px] transition-all duration-300 ${idx === step ? 'bg-blue-50 border-blue-500 shadow-md math-current' : 'bg-white border-slate-200 opacity-75 math-history'}`}>
+                                            <div className="flex items-center gap-2 mb-1.5">
+                                                <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-black ${idx === step ? 'bg-blue-600 text-white' : 'bg-slate-200 text-slate-600'}`}>{idx + 1}</div>
+                                                <div className={`text-xs font-black uppercase tracking-wider ${idx === step ? 'text-blue-700' : 'text-slate-500'}`}>{s.propertyText}</div>
+                                            </div>
+                                            <p className="text-xs sm:text-sm font-bold text-slate-600 mb-2 leading-snug">{s.detail}</p>
+                                            <div className="w-full flex items-center justify-center min-h-[2.6rem] bg-white/80 rounded-xl py-1.5 px-2 border border-slate-200/80">
+                                                <MathDisplay latex={s.latex} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Robot y Feedback */}
+                        <div className="shrink-0 bg-white w-full px-4 py-2.5 sm:px-6 flex items-center gap-4 border-t-[3px] border-slate-200 z-20">
+                            <div className="shrink-0">
+                                <RobotAssistant step={step} maxSteps={maxSteps} />
+                            </div>
+                            <div className="flex-1 text-sm sm:text-base font-extrabold text-slate-700 bg-blue-50 px-4 py-2.5 rounded-2xl border-2 border-blue-100">
+                                <div key={`speech-${exIdx}-${step}`} className="animate-slideInRight">
+                                    {currentStepData.robotSpeech}
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Controles */}
+                        <div className="shrink-0 bg-gradient-to-b from-[#e0e7ff] to-[#c7d2fe] p-2.5 sm:p-3 w-full flex justify-center border-t-[3px] border-white z-20">
+                            <div className="flex justify-center items-stretch w-full max-w-4xl gap-2 sm:gap-3 h-11 sm:h-12">
+                                <button
+                                    onClick={prevStep}
+                                    disabled={step === 0}
+                                    className="flex-[0.8] bg-[#a5b4fc] border-b-[4px] border-[#6366f1] text-[#312e81] rounded-l-xl font-black text-sm sm:text-base flex items-center justify-center gap-1 active:border-b-0 active:translate-y-[3px] disabled:opacity-40 transition-all"
+                                >
+                                    <ChevronLeft className="w-5 h-5 stroke-[3px]" />
+                                    <span className="hidden sm:inline">Atrás</span>
+                                </button>
+
+                                <div className="bg-[#4f46e5] text-white font-black px-5 text-sm sm:text-lg flex items-center justify-center border-b-[4px] border-[#312e81]">
+                                    Paso {step + 1} / {maxSteps + 1}
+                                </div>
+
+                                <button
+                                    onClick={nextStep}
+                                    className={`flex-[2] border-b-[4px] text-white rounded-r-xl font-black text-sm sm:text-lg flex items-center justify-center gap-2 active:border-b-0 active:translate-y-[3px] transition-all ${
+                                        step === maxSteps
+                                            ? 'bg-gradient-to-r from-[#10b981] to-[#047857] border-[#065f46]'
+                                            : 'bg-gradient-to-r from-[#3b82f6] to-[#2563eb] border-[#1d4ed8]'
+                                    }`}
+                                >
+                                    <span>
+                                        {step < maxSteps ? 'Siguiente paso' : exIdx < EXERCISES.length - 1 ? 'Siguiente Reto' : '¡Volver al Menú!'}
+                                    </span>
+                                    <ChevronRight className="w-5 h-5 stroke-[3px]" />
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
